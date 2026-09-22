@@ -1,12 +1,385 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gustavo - 5A</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gustavo 5A — Stickman Chute Flamejante | 100 Níveis</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:#0f0f1a;color:#fff;font-family:'Segoe UI',Arial,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:10px;overflow-x:hidden}
+  h1{font-size:clamp(18px,3vw,28px);margin:8px 0 2px;text-shadow:0 0 12px #ff6a00}
+  h1 span{color:#ffb300}
+  p.sub{opacity:.8;font-size:14px;margin-bottom:8px}
+  #wrap{position:relative;width:min(96vw,960px)}
+  canvas{width:100%;height:auto;display:block;background:#141428;border:3px solid #ff6a00;border-radius:12px;box-shadow:0 0 25px #ff6a0033;touch-action:none}
+  #hud{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;width:min(96vw,960px);margin:8px 0}
+  .pill{background:#1e1e38;border:1px solid #4444aa;border-radius:20px;padding:6px 14px;font-size:14px;font-weight:bold}
+  .pill.hp{border-color:#ff4444}.pill.lvl{border-color:#ffb300;color:#ffb300}.pill.foe{border-color:#ff6a00}
+  .bar{width:120px;height:10px;background:#333;border-radius:5px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:8px}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#00e676,#00c853);transition:width .2s}
+  #overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,5,20,.88);border-radius:12px;text-align:center;padding:20px;z-index:5}
+  #overlay.hidden{display:none}
+  #overlay h2{font-size:clamp(24px,5vw,44px);color:#ffb300;text-shadow:0 0 20px #ff6a00;margin-bottom:10px}
+  #overlay p{max-width:560px;line-height:1.5;margin-bottom:12px;font-size:15px}
+  #overlay .keys{background:#22224a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;line-height:1.8}
+  button.big{background:linear-gradient(180deg,#ff8f00,#ff5722);border:none;color:#fff;font-size:20px;font-weight:bold;padding:14px 42px;border-radius:30px;cursor:pointer;box-shadow:0 4px 0 #a83200,0 0 20px #ff6a0088;transition:transform .1s}
+  button.big:active{transform:scale(.95)}
+  button.small{background:#33335e;border:1px solid #666;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;margin:4px;font-size:14px}
+  #touch{position:fixed;bottom:10px;left:0;right:0;display:none;justify-content:space-between;padding:0 14px;z-index:10;pointer-events:none}
+  #touch div{display:flex;gap:10px;pointer-events:auto}
+  #touch button{width:64px;height:64px;border-radius:50%;border:2px solid #ff6a00;background:rgba(30,30,60,.7);color:#fff;font-size:22px;font-weight:bold}
+  #touch button:active{background:#ff6a00}
+  @media (pointer:coarse){#touch{display:flex}}
+  #toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:#ffb300;color:#000;font-weight:bold;padding:8px 22px;border-radius:20px;font-size:18px;display:none;z-index:6;box-shadow:0 0 20px #ffb300}
+</style>
 </head>
 <body>
-    <h1>Olá, eu sou o Gustavo!</h1>
-    <p>Este é o meu site - Turma 5A - 260901</p>
+<h1>🔥 GUSTAVO <span>5A</span> — STICKMAN CHUTE FLAMEJANTE 🔥</h1>
+<p class="sub">100 níveis • Pulo duplo • Chute flamejante (10 de dano) • Inimigos 25❤/5 dano • Chefão 150❤/20 dano • Você 100❤</p>
+<div id="hud">
+  <div class="pill lvl">NÍVEL <span id="hLvl">1</span>/100</div>
+  <div class="pill hp">❤ VOCÊ <span id="hHp">100</span><span class="bar"><i id="hHpBar" style="width:100%"></i></span></div>
+  <div class="pill foe">👹 INIMIGOS: <span id="hFoe">0</span></div>
+  <div class="pill">🏆 RECORDE: NÍVEL <span id="hBest">1</span></div>
+</div>
+<div id="wrap">
+  <canvas id="game" width="960" height="540"></canvas>
+  <div id="toast"></div>
+  <div id="overlay">
+    <h2 id="ovTitle">🥋 STICKMAN FLAMEJANTE</h2>
+    <p id="ovText">Você é o <b>Boneco de Palito</b> com <b style="color:#ff8f00">CHUTES FLAMEJANTES</b> e <b style="color:#40c4ff">PULO DUPLO</b>!<br>Derrote todos os inimigos para avançar. A cada nível fica <b>mais difícil</b>! A cada 10 níveis tem <b style="color:#ff5252">CHEFÃO (150 de vida, 20 de dano)</b>!<br>Sobreviva aos <b>100 NÍVEIS</b>!</p>
+    <div class="keys">⬅️➡️ ou <b>A/D</b> = andar &nbsp;•&nbsp; ⬆️ / <b>W / ESPAÇO</b> = pular 2x (pulo duplo)<br><b>J / X / F</b> ou botão 🦵 = <b>chute flamejante (10 de dano)</b><br>Você: 100❤ &nbsp;•&nbsp; Inimigo: 25❤, encostar tira 5 &nbsp;•&nbsp; Chefão: 150❤, encostar tira 20</div>
+    <button class="big" id="btnStart">▶ JOGAR</button>
+    <div><button class="small" id="btnL1">Nível 1</button><button class="small" id="btnCont">Continuar do recorde</button></div>
+  </div>
+</div>
+<div id="touch">
+  <div><button id="tLeft">◀</button><button id="tRight">▶</button></div>
+  <div><button id="tJump">⤒</button><button id="tKick">🦵</button></div>
+</div>
+<script>
+"use strict";
+const cv=document.getElementById('game'),ctx=cv.getContext('2d');
+const W=960,H=540,GROUND=470,GRAV=0.65;
+const el={lvl:document.getElementById('hLvl'),hp:document.getElementById('hHp'),hpBar:document.getElementById('hHpBar'),foe:document.getElementById('hFoe'),best:document.getElementById('hBest'),ov:document.getElementById('overlay'),ovT:document.getElementById('ovTitle'),ovX:document.getElementById('ovText'),toast:document.getElementById('toast')};
+let best=parseInt(localStorage.getItem('stick_best')||'1');el.best.textContent=best;
+let state='menu',level=1,frame=0,shake=0,particles=[],floaters=[],platforms=[],enemies=[],keys={},kickId=0,levelClearT=0;
+const player={x:80,y:GROUND-70,w:26,h:70,vx:0,vy:0,face:1,onGround:true,jumps:2,hp:100,walk:0,kickT:0,cool:0,inv:0,moving:false};
+
+// ---------- AUDIO ----------
+let AC=null;function beep(f,d,type='square',v=.08){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d);}catch(e){}}
+const sfx={jump:()=>beep(400,.12,'square',.06),djump:()=>beep(600,.14,'square',.07),kick:()=>{beep(180,.15,'sawtooth',.1);},hit:()=>beep(250,.1,'sawtooth',.09),hurt:()=>beep(120,.25,'sawtooth',.12),die:()=>beep(90,.4,'sawtooth',.12),win:()=>{beep(523,.15);setTimeout(()=>beep(659,.15),140);setTimeout(()=>beep(784,.3),280);},boss:()=>beep(70,.6,'sawtooth',.14)};
+
+// ---------- LEVEL GEN (cada nível mais difícil) ----------
+function genLevel(n){
+  platforms=[{x:0,y:GROUND,w:W,h:70}];
+  const nPlat=Math.min(2+Math.floor(n/14),6);
+  for(let i=0;i<nPlat;i++){
+    const w=110-Math.min(40,n*0.3);
+    platforms.push({x:60+((i*263+n*97)%(W-160)),y:GROUND-90-((i*67+n*31)%260),w:w,h:16});
+  }
+  enemies=[];
+  const isBoss=(n%10===0);
+  let count=Math.min(1+Math.floor(n/7),12); // 1 → 12 inimigos
+  if(isBoss) count=Math.min(2+Math.floor(n/12),8);
+  const spd=Math.min(0.8+n*0.035,3.6);
+  const aggro=Math.min(0.6+n*0.02,2.2);
+  for(let i=0;i<count;i++){
+    const hp=25;
+    enemies.push({type:'foe',x:450+((i*173+n*131)%420),y:GROUND-60,w:24,h:60,vx:0,vy:0,hp:hp,max:25,spd:spd+Math.random()*0.6,dir:i%2?1:-1,cool:0,atk:0,walk:Math.random()*6,face:-1,hitBy:-1,aggro:aggro});
+  }
+  if(isBoss){
+    const nb=Math.floor(n/10); // chefão escala levemente em velocidade
+    enemies.push({type:'boss',x:700,y:GROUND-100,w:40,h:95,vx:0,vy:0,hp:150,max:150,spd:Math.min(1.4+n*0.02,3.0),dir:-1,cool:0,atk:0,walk:0,face:-1,hitBy:-1,jumpT:120+Math.random()*120,chargeT:0,aggro:2});
+    sfx.boss();
+  }
+  // reseta player
+  player.x=80;player.y=GROUND-70;player.vx=0;player.vy=0;player.hp=100;player.inv=60;player.kickT=0;player.cool=0;player.face=1;
+  particles=[];floaters=[];levelClearT=0;
+  el.lvl.textContent=n;
+  if(n>best){best=n;localStorage.setItem('stick_best',best);el.best.textContent=best;}
+  toast('NÍVEL '+n+(isBoss?' — 👹 CHEFÃO! 👹':''));
+}
+function toast(t){el.toast.textContent=t;el.toast.style.display='block';clearTimeout(el.toast._t);el.toast._t=setTimeout(()=>el.toast.style.display='none',2200);}
+
+// ---------- INPUT ----------
+addEventListener('keydown',e=>{
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key))e.preventDefault();
+  keys[e.key.toLowerCase()]=true;
+  if(state!=='play')return;
+  if([' ','arrowup','w'].includes(e.key.toLowerCase()))doJump();
+  if(['j','x','f'].includes(e.key.toLowerCase()))doKick();
+});
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function bindHold(id,key){const b=document.getElementById(id);const on=e=>{e.preventDefault();keys[key]=true;if(key==='jump')doJump();if(key==='kick')doKick();};const off=e=>{e.preventDefault();keys[key]=false;};b.addEventListener('touchstart',on,{passive:false});b.addEventListener('touchend',off);b.addEventListener('mousedown',on);b.addEventListener('mouseup',off);}
+bindHold('tLeft','arrowleft');bindHold('tRight','arrowright');bindHold('tJump','jump');bindHold('tKick','kick');
+cv.addEventListener('touchstart',e=>{e.preventDefault();if(state==='play')doKick();},{passive:false});
+document.getElementById('btnStart').onclick=()=>{startGame(level);};
+document.getElementById('btnL1').onclick=()=>{level=1;startGame(1);};
+document.getElementById('btnCont').onclick=()=>{level=best;startGame(best);};
+function startGame(n){level=n;genLevel(n);state='play';el.ov.classList.add('hidden');if(AC&&AC.resume)AC.resume();}
+
+// ---------- AÇÕES ----------
+function doJump(){
+  if(player.jumps>0){
+    player.vy=(player.jumps===2)?-13.5:-12; // pulo duplo
+    player.jumps--;player.onGround=false;
+    if(player.jumps===1){sfx.jump();puff(player.x,player.y+player.h,6,'#aaa');}
+    else{sfx.djump();ring(player.x,player.y+player.h);puff(player.x,player.y+player.h,8,'#40c4ff');}
+  }
+}
+function doKick(){
+  if(player.cool>0||player.kickT>0)return;
+  player.kickT=22;player.cool=26;kickId++;
+  sfx.kick();
+  // chamas na perna
+  const fx=player.x+(player.face>0?player.w+10:-10);
+  for(let i=0;i<10;i++)flame(fx,player.y+45+Math.random()*14);
+}
+function flame(x,y){particles.push({t:'f',x:x+(Math.random()*16-8),y:y+(Math.random()*10-5),vx:(Math.random()-.5)*3-1,vy:-Math.random()*3-1,life:22+Math.random()*14,max:36,s:4+Math.random()*6,c:['#ffeb3b','#ff9800','#ff5722','#ff1744'][Math.floor(Math.random()*4)]});}
+function puff(x,y,n,c){for(let i=0;i<n;i++)particles.push({t:'p',x:x,y:y,vx:(Math.random()-.5)*4,vy:-Math.random()*3,life:20,max:20,s:3+Math.random()*3,c:c||'#bbb'});}
+function ring(x,y){particles.push({t:'r',x:x,y:y,vx:0,vy:0,life:14,max:14,s:4,c:'#40c4ff'});}
+function floater(x,y,txt,c){floaters.push({x:x,y:y,txt:txt,c:c||'#fff',life:45});}
+function hurtPlayer(d,srcX){
+  if(player.inv>0||state!=='play')return;
+  player.hp-=d;player.inv=55;sfx.hurt();shake=8;
+  player.vx=(player.x<srcX?-1:1)*6;player.vy=-6;
+  puff(player.x,player.y+30,8,'#ff5252');
+  floater(player.x,player.y-10,'-'+d,'#ff5252');
+  if(player.hp<=0){player.hp=0;gameOver();}
+}
+
+// ---------- UPDATE ----------
+function rects(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+function update(){
+  frame++;
+  if(shake>0)shake--;
+  // player move
+  const L=keys['arrowleft']||keys['a'],R=keys['arrowright']||keys['d'];
+  const SPD=4.6;
+  player.moving=false;
+  if(L){player.vx=-SPD;player.face=-1;player.moving=true;}
+  else if(R){player.vx=SPD;player.face=1;player.moving=true;}
+  else player.vx*=0.7;
+  if(player.moving&&player.onGround)player.walk+=0.35;else if(!player.onGround)player.walk+=0.1;
+  player.vy+=GRAV;if(player.vy>16)player.vy=16;
+  player.x+=player.vx;
+  if(player.x<4)player.x=4;if(player.x>W-player.w-4)player.x=W-player.w-4;
+  // plataformas X depois Y
+  player.y+=player.vy;player.onGround=false;
+  for(const p of platforms){
+    if(player.x+player.w>p.x&&player.x<p.x+p.w){
+      if(player.vy>=0&&player.y+player.h>=p.y&&player.y+player.h<=p.y+26){player.y=p.y-player.h;player.vy=0;player.onGround=true;player.jumps=2;}
+      else if(player.vy<0&&player.y>=p.y+p.h-26&&player.y<=p.y+p.h){player.y=p.y+p.h;player.vy=0;}
+    }
+  }
+  if(player.y+player.h>=GROUND&&platforms.length){/* ground já é plataforma */}
+  if(player.y>H){player.y=GROUND-player.h;player.vy=0;hurtPlayer(10,player.x+100);}
+  if(player.cool>0)player.cool--;if(player.inv>0)player.inv--;if(player.kickT>0)player.kickT--;
+  if(player.kickT>0&&player.kickT%3===0){const fx=player.x+(player.face>0?player.w+8:-8);flame(fx,player.y+48);}
+
+  // hitbox do chute: ativa nos frames 6..17
+  if(player.kickT<=17&&player.kickT>=6){
+    const hb={x:player.face>0?player.x+player.w-4:player.x-56,y:player.y+18,w:60,h:44};
+    for(const e of enemies){
+      if(e.hp>0&&e.hitBy!==kickId&&rects(hb,e)){
+        e.hitBy=kickId;e.hp-=10;sfx.hit();
+        e.vx=(player.face)*7;e.vy=-4;
+        const fx=e.x+e.w/2;
+        for(let i=0;i<8;i++)flame(fx,e.y+30);
+        floater(fx,e.y-8,'-10 🔥','#ffb300');
+        if(e.hp<=0){e.hp=0;sfx.die();puff(e.x+e.w/2,e.y+30,14,'#ff6a00');floater(e.x,e.y-20,'K.O.! +'+(e.type==='boss'?150:25),'#00e676');shake=6;}
+      }
+    }
+  }
+  // remove mortos
+  enemies=enemies.filter(e=>e.hp>0);
+
+  // inimigos IA
+  for(const e of enemies){
+    e.walk+=0.25;
+    const dmg=e.type==='boss'?20:5;
+    // persegue player
+    const dx=(player.x-e.x);
+    const want=Math.sign(dx)||1;
+    if(Math.abs(dx)>8)e.face=want;
+    const sp=e.spd*(e.type==='boss'&&e.chargeT>0?2.2:1);
+    e.vx+= (want*sp - e.vx)*0.08*e.aggro;
+    e.vy+=GRAV;if(e.vy>16)e.vy=16;
+    e.x+=e.vx;
+    if(e.x<4){e.x=4;e.vx=Math.abs(e.vx);}if(e.x>W-e.w-4){e.x=W-e.w-4;e.vx=-Math.abs(e.vx);}
+    e.y+=e.vy;e.onGround=false;
+    for(const p of platforms){
+      if(e.x+e.w>p.x&&e.x<p.x+p.w&&e.vy>=0&&e.y+e.h>=p.y&&e.y+e.h<=p.y+28){e.y=p.y-e.h;e.vy=0;e.onGround=true;}
+    }
+    // chefão pula e investe
+    if(e.type==='boss'){
+      e.face=Math.sign(player.x-e.x)||1;
+      if(e.jumpT>0)e.jumpT--;else if(e.onGround){e.vy=-12;e.vx=e.face*4;e.jumpT=90+Math.random()*90;}
+      if(e.chargeT>0)e.chargeT--;else if(Math.random()<0.006){e.chargeT=50;floater(e.x,e.y-14,'💢 INVESTIDA!','#ff5252');}
+    }
+    if(e.cool>0)e.cool--;
+    // dano por contato
+    if(e.cool<=0&&rects(player,e)){hurtPlayer(dmg,e.x+e.w/2);e.cool=55;}
+  }
+
+  // partículas
+  for(const p of particles){p.life--;p.x+=p.vx;p.y+=p.vy;if(p.t==='f'){p.vy-=0.05;p.vx*=0.97;}}
+  particles=particles.filter(p=>p.life>0);
+  for(const f of floaters){f.life--;f.y-=1;}
+  floaters=floaters.filter(f=>f.life>0);
+
+  // HUD
+  el.hp.textContent=Math.max(0,Math.ceil(player.hp));el.hpBar.style.width=(player.hp)+'%';
+  el.foe.textContent=enemies.length;
+
+  // passou de nível?
+  if(enemies.length===0){
+    levelClearT++;
+    if(levelClearT===1){sfx.win();player.hp=Math.min(100,player.hp+0);}
+    if(levelClearT>90){
+      if(level>=100){victory();return;}
+      level++;genLevel(level);
+    }
+  }
+}
+
+// ---------- DRAW stickman com animação ----------
+function limb(x,y,len,ang){return [x+Math.sin(ang)*len,y+Math.cos(ang)*len];}
+function drawStick(x,y,w,h,face,walkT,moving,onGround,kickT,inv,isBoss,bodyC){
+  if(inv>0&&Math.floor(frame/4)%2===0)return; // piscando invencível
+  const cx=x+w/2,hipY=y+h*0.55,shY=y+h*0.28,headR=isBoss?15:11;
+  const headY=y+headR+2;
+  ctx.lineWidth=isBoss?5:3.5;ctx.lineCap='round';ctx.strokeStyle=bodyC;
+  // sombra
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(cx,GROUND+62+(y+h-GROUND>0?0:0),16,5,0,0,7);ctx.fill();
+  // pernas
+  let lA1,lA2,rA1,rA2;
+  if(kickT>0){ // ANIMAÇÃO DE ATAQUE: perna estendida + chamas
+    const k=(22-kickT)/22,ext=Math.sin(Math.min(1,k*1.4)*Math.PI);
+    const kx=cx+face*(14+34*ext),ky=hipY+8-10*ext;
+    ctx.strokeStyle=bodyC;ctx.beginPath();ctx.moveTo(cx,hipY);ctx.lineTo(cx-face*8,hipY+26);ctx.stroke();
+    ctx.strokeStyle='#ff8f00';ctx.lineWidth=isBoss?6:5;ctx.beginPath();ctx.moveTo(cx,hipY);ctx.lineTo(kx,ky);ctx.stroke();
+    ctx.lineWidth=isBoss?5:3.5;ctx.strokeStyle=bodyC;
+    // chamas no pé
+    if(kickT<=17&&kickT>=4){
+      ctx.fillStyle=['#ffeb3b','#ff9800','#ff5722'][Math.floor(frame/3)%3];
+      ctx.beginPath();ctx.arc(kx+face*8,ky,10+Math.random()*7,0,7);ctx.fill();
+      ctx.fillStyle='#ff1744';ctx.beginPath();ctx.arc(kx+face*8,ky,5+Math.random()*4,0,7);ctx.fill();
+    }
+  }else if(!onGround){ // pulo / pulo duplo
+    ctx.beginPath();ctx.moveTo(cx,hipY);ctx.lineTo(cx-12*face,hipY+24);ctx.lineTo(cx-18*face,hipY+40);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,hipY);ctx.lineTo(cx+14*face,hipY+18);ctx.lineTo(cx+22*face,hipY+30);ctx.stroke();
+  }else if(moving){ // ANIMAÇÃO DE ANDAR
+    const s=Math.sin(walkT)*12;
+    ctx.beginPath();ctx.moveTo(cx,hipY);ctx.lineTo(cx+s*0.6,hipY+26);ctx.lineTo(cx+s,hipY+44);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,hipY);ctx.lineTo(cx-s*0.6,hipY+26);ctx.lineTo(cx-s,hipY+44);ctx.stroke();
+  }else{ // parado
+    ctx.beginPath();ctx.moveTo(cx,hipY);ctx.lineTo(cx-7,hipY+26);ctx.lineTo(cx-7,hipY+44);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,hipY);ctx.lineTo(cx+7,hipY+26);ctx.lineTo(cx+7,hipY+44);ctx.stroke();
+  }
+  // corpo
+  ctx.beginPath();ctx.moveTo(cx,shY);ctx.lineTo(cx,hipY);ctx.stroke();
+  // braços
+  if(kickT>0){
+    ctx.beginPath();ctx.moveTo(cx,shY+4);ctx.lineTo(cx-face*16,shY+14);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,shY+4);ctx.lineTo(cx+face*10,shY-8);ctx.stroke();
+  }else if(moving&&onGround){
+    const s=Math.sin(walkT)*10;
+    ctx.beginPath();ctx.moveTo(cx,shY+4);ctx.lineTo(cx+s,shY+20);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,shY+4);ctx.lineTo(cx-s,shY+20);ctx.stroke();
+  }else{
+    // guarda de luta
+    ctx.beginPath();ctx.moveTo(cx,shY+4);ctx.lineTo(cx+face*15,shY+12);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,shY+4);ctx.lineTo(cx+face*12,shY-2);ctx.stroke();
+  }
+  // cabeça
+  ctx.fillStyle=bodyC;ctx.beginPath();ctx.arc(cx,headY,headR,0,7);ctx.fill();
+  ctx.fillStyle='#000';const ex=cx+face*4;
+  ctx.beginPath();ctx.arc(ex-2,headY-2,1.8,0,7);ctx.fill();
+  // faixa / chamas na cabeça do player
+  if(bodyC==='#40c4ff'||bodyC==='#fff'){
+    ctx.fillStyle='#ff5722';ctx.fillRect(cx-headR,headY-headR-4,headR*2,4);
+  }
+  if(isBoss){ // chifres + olhos vermelhos
+    ctx.strokeStyle='#ff1744';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(cx-10,headY-8);ctx.lineTo(cx-16,headY-20);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx+10,headY-8);ctx.lineTo(cx+16,headY-20);ctx.stroke();
+    ctx.fillStyle='#ff0000';ctx.beginPath();ctx.arc(ex-2,headY-2,2.6,0,7);ctx.fill();ctx.beginPath();ctx.arc(ex+5,headY-2,2.6,0,7);ctx.fill();
+  }
+}
+function drawHpBar(x,y,w,hp,max){
+  ctx.fillStyle='#000';ctx.fillRect(x-2,y-2,w+4,8);
+  ctx.fillStyle='#333';ctx.fillRect(x,y,w,4);
+  ctx.fillStyle=hp/max>0.5?'#00e676':hp/max>0.25?'#ffb300':'#ff1744';
+  ctx.fillRect(x,y,w*(hp/max),4);
+}
+function draw(){
+  ctx.save();
+  if(shake>0)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+  // fundo com gradiente + parallax simples
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1a1a3a');g.addColorStop(.7,'#2b1a4a');g.addColorStop(1,'#3a1a2a');
+  ctx.fillStyle=g;ctx.fillRect(-10,-10,W+20,H+20);
+  ctx.fillStyle='#ffffff22';for(let i=0;i<40;i++){const sx=(i*137+frame*0.1*(1+i%3))%W;ctx.fillRect(sx,(i*53)%300,2,2);}
+  ctx.fillStyle='#ff6a00';ctx.beginPath();ctx.arc(830,90,40,0,7);ctx.fill();ctx.fillStyle='#ffb300';ctx.beginPath();ctx.arc(830,90,32,0,7);ctx.fill();
+  // montanhas
+  ctx.fillStyle='#0c0c22';ctx.beginPath();ctx.moveTo(0,GROUND);for(let x=0;x<=W;x+=80)ctx.lineTo(x,GROUND-60-((x*7+level*13)%90));ctx.lineTo(W,GROUND);ctx.fill();
+  // plataformas
+  for(const p of platforms){
+    if(p.h>30){ctx.fillStyle='#3d2b1f';ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle='#5d8a4a';ctx.fillRect(p.x,p.y,p.w,10);}
+    else{ctx.fillStyle='#4a4a7a';ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle='#7a7aff';ctx.fillRect(p.x,p.y,p.w,4);}
+  }
+  // saída / próxima fase quando zerou
+  if(enemies.length===0){
+    ctx.fillStyle='#00e676';ctx.font='bold 22px Arial';ctx.textAlign='center';
+    ctx.fillText(level>=100?'🏆 FIM!':'✨ NÍVEL LIMPO! INDO PARA '+(level+1)+'...',W/2,150);
+  }
+  // player
+  drawStick(player.x,player.y,player.w,player.h,player.face,player.walk,player.moving,player.onGround,player.kickT,player.inv,false,'#fff');
+  // faixa de chute
+  if(player.kickT<=17&&player.kickT>=6){
+    ctx.strokeStyle='#ffb30055';ctx.lineWidth=3;
+    ctx.strokeRect(player.face>0?player.x+player.w-4:player.x-56,player.y+18,60,44);
+  }
+  // inimigos
+  for(const e of enemies){
+    const c=e.type==='boss'?'#ff1744':'#ff6a00';
+    drawStick(e.x,e.y,e.w,e.h,e.face,e.walk,Math.abs(e.vx)>0.3,e.onGround||true,e.atk>0?10:0,0,e.type==='boss',c);
+    drawHpBar(e.x+(e.w-50)/2,e.y-14,e.type==='boss'?70:50,e.hp,e.max);
+    if(e.type==='boss'){ctx.fillStyle='#ff5252';ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.fillText('CHEFÃO 150❤/20⚔',e.x+e.w/2,e.y-22);}
+  }
+  // partículas
+  for(const p of particles){
+    if(p.t==='r'){ctx.strokeStyle=p.c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,6+(p.max-p.life)*3,0,7);ctx.stroke();}
+    else{ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.s*(p.life/p.max+0.3),0,7);ctx.fill();ctx.globalAlpha=1;}
+  }
+  // textos flutuantes
+  ctx.textAlign='center';ctx.font='bold 16px Arial';
+  for(const f of floaters){ctx.globalAlpha=Math.min(1,f.life/25);ctx.fillStyle=f.c;ctx.fillText(f.txt,f.x,f.y);ctx.globalAlpha=1;}
+  // HUD canvas
+  ctx.textAlign='left';ctx.font='bold 16px Arial';ctx.fillStyle='#fff';
+  ctx.fillText('NÍVEL '+level+'/100  ❤ '+Math.ceil(player.hp)+'/100  🦵 chute=10  👹 '+(enemies.length)+' left',14,28);
+  if(level%10===0){ctx.fillStyle='#ff5252';ctx.font='bold 18px Arial';ctx.textAlign='center';ctx.fillText('⚠ CHEFÃO: 150 VIDA • 20 DANO ⚠',W/2,52);}
+  ctx.restore();
+}
+function loop(){if(state==='play'){update();draw();}requestAnimationFrame(loop);}
+genLevel(1);state='menu';draw();loop();
+function gameOver(){
+  state='dead';sfx.die();
+  el.ov.classList.remove('hidden');
+  el.ovT.textContent='💀 GAME OVER — NÍVEL '+level;
+  el.ovX.innerHTML='Você chegou até o nível <b>'+level+'/100</b>!<br>Inimigos: 25❤/5 dano • Chefão: 150❤/20 dano • Você: 100❤ • Chute: 10 dano';
+  document.getElementById('btnStart').textContent='↻ TENTAR DE NOVO (NÍVEL '+level+')';
+  document.getElementById('btnStart').onclick=()=>startGame(level);
+}
+function victory(){
+  state='win';sfx.win();
+  el.ov.classList.remove('hidden');
+  el.ovT.textContent='🏆 VOCÊ ZEROU OS 100 NÍVEIS!';
+  el.ovX.innerHTML='LENDÁRIO! O Stickman Flamejante venceu tudo!<br>Compartilhe com a turma 5A!';
+  document.getElementById('btnStart').textContent='▶ JOGAR DE NOVO';
+  document.getElementById('btnStart').onclick=()=>startGame(1);
+}
+</script>
 </body>
 </html>
