@@ -35,7 +35,7 @@
 </head>
 <body>
 <h1>🔥 GUSTAVO <span>5A</span> — STICKMAN CHUTE FLAMEJANTE 🔥</h1>
-<p class="sub">PLATAFORMA com rolagem ➡ • 100 níveis • Pulo duplo • Chute flamejante (10) • Chegue na 🚪 SAÍDA • Cuidado com buracos!</p>
+<p class="sub">PLATAFORMA ➡ • CHEFÃO em TODO nível 👹 • 5 hits seguidos = 🌪️ SUPER GIRATÓRIO • Chegue na 🚪 SAÍDA!</p>
 <div id="hud">
   <div class="pill lvl">NÍVEL <span id="hLvl">1</span>/100</div>
   <div class="pill hp">❤ VOCÊ <span id="hHp">100</span><span class="bar"><i id="hHpBar" style="width:100%"></i></span></div>
@@ -47,8 +47,8 @@
   <div id="toast"></div>
   <div id="overlay">
     <h2 id="ovTitle">🥋 STICKMAN FLAMEJANTE</h2>
-    <p id="ovText">Jogo de <b>PLATAFORMA</b>: corra para a direita, pule buracos e plataformas, derrote os inimigos e entre na <b style="color:#00e676">🚪 SAÍDA</b>!<br>Você é o <b>Boneco de Palito</b> com <b style="color:#ff8f00">CHUTES FLAMEJANTES</b> e <b style="color:#40c4ff">PULO DUPLO</b>!<br>A cada 10 níveis tem <b style="color:#ff5252">CHEFÃO (150❤/20 dano)</b>! Sobreviva aos <b>100 NÍVEIS</b>!</p>
-    <div class="keys">⬅️➡️ ou <b>A/D</b> = andar &nbsp;•&nbsp; ⬆️ / <b>W / ESPAÇO</b> = pular 2x (pulo duplo)<br><b>J / X / F</b> ou botão 🦵 = <b>chute flamejante (10 de dano)</b><br>Você: 100❤ &nbsp;•&nbsp; Inimigo: 25❤, encostar tira 5 &nbsp;•&nbsp; Chefão: 150❤, encostar tira 20</div>
+    <p id="ovText">Jogo de <b>PLATAFORMA</b>: corra para a direita, pule buracos, derrote os inimigos e entre na <b style="color:#00e676">🚪 SAÍDA</b>!<br><b style="color:#ff5252">👹 CHEFÃO EM TODO NÍVEL (150❤/20 dano)</b> — e os inimigos <b>PULAM os buracos</b>!<br>Acerte <b style="color:#00e5ff">5 CHUTES SEGUIDOS</b> sem tomar dano e solte o <b>🌪️ SUPER GIRATÓRIO</b>: você gira no ar chutando tudo!</p>
+    <div class="keys">⬅️➡️ ou <b>A/D</b> = andar &nbsp;•&nbsp; ⬆️ / <b>W / ESPAÇO</b> = pular 2x<br><b>J / X / F</b> ou 🦵 = <b>chute (10)</b> • <b>5 hits seguidos = 🌪️ SUPER (15 por giro)</b><br>Você: 100❤ • Inimigo: 25❤/5 dano • Chefão: 150❤/20 dano (todo nível!)</div>
     <button class="big" id="btnStart">▶ JOGAR</button>
     <div><button class="small" id="btnL1">Nível 1</button><button class="small" id="btnCont">Continuar do recorde</button></div>
   </div>
@@ -65,11 +65,11 @@ let WORLD_W=2800,camX=0,exitDoor={x:2700,y:GROUND-110,w:60,h:110};
 const el={lvl:document.getElementById('hLvl'),hp:document.getElementById('hHp'),hpBar:document.getElementById('hHpBar'),foe:document.getElementById('hFoe'),best:document.getElementById('hBest'),ov:document.getElementById('overlay'),ovT:document.getElementById('ovTitle'),ovX:document.getElementById('ovText'),toast:document.getElementById('toast')};
 let best=parseInt(localStorage.getItem('stick_best')||'1');el.best.textContent=best;
 let state='menu',level=1,frame=0,shake=0,particles=[],floaters=[],platforms=[],enemies=[],keys={},kickId=0,levelClearT=0;
-const player={x:80,y:GROUND-70,w:26,h:70,vx:0,vy:0,face:1,onGround:true,jumps:2,hp:100,walk:0,kickT:0,cool:0,inv:0,moving:false};
+const player={x:80,y:GROUND-70,w:26,h:70,vx:0,vy:0,face:1,onGround:true,jumps:2,hp:100,walk:0,kickT:0,cool:0,inv:0,moving:false,combo:0,comboT:0,superT:0,spin:0};
 
 // ---------- AUDIO ----------
 let AC=null;function beep(f,d,type='square',v=.08){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d);}catch(e){}}
-const sfx={jump:()=>beep(400,.12,'square',.06),djump:()=>beep(600,.14,'square',.07),kick:()=>{beep(180,.15,'sawtooth',.1);},hit:()=>beep(250,.1,'sawtooth',.09),hurt:()=>beep(120,.25,'sawtooth',.12),die:()=>beep(90,.4,'sawtooth',.12),win:()=>{beep(523,.15);setTimeout(()=>beep(659,.15),140);setTimeout(()=>beep(784,.3),280);},boss:()=>beep(70,.6,'sawtooth',.14)};
+const sfx={jump:()=>beep(400,.12,'square',.06),djump:()=>beep(600,.14,'square',.07),kick:()=>{beep(180,.15,'sawtooth',.1);},hit:()=>beep(250,.1,'sawtooth',.09),hurt:()=>beep(120,.25,'sawtooth',.12),die:()=>beep(90,.4,'sawtooth',.12),win:()=>{beep(523,.15);setTimeout(()=>beep(659,.15),140);setTimeout(()=>beep(784,.3),280);},boss:()=>beep(70,.6,'sawtooth',.14),super:()=>{beep(200,.1,'sawtooth',.12);setTimeout(()=>beep(400,.1,'sawtooth',.12),90);setTimeout(()=>beep(800,.25,'sawtooth',.12),180);}};
 
 // ---------- LEVEL GEN PLATAFORMA com rolagem lateral ----------
 function genLevel(n){
@@ -99,25 +99,23 @@ function genLevel(n){
   exitDoor={x:WORLD_W-120,y:GROUND-110,w:60,h:110};
   enemies=[];
   const isBoss=(n%10===0);
-  let count=Math.min(1+Math.floor(n/7),12); // 1 → 12 inimigos
-  if(isBoss) count=Math.min(2+Math.floor(n/12),8);
+  let count=Math.min(1+Math.floor(n/7),10); // 1 → 10 inimigos + SEMPRE 1 chefão
   const spd=Math.min(0.8+n*0.035,3.6);
   const aggro=Math.min(0.6+n*0.02,2.2);
   for(let i=0;i<count;i++){
-    const ex=600+((i*521+n*311)%(WORLD_W-900));
+    const ex=500+((i*449+n*311)%(WORLD_W-1100));
     const hp=25;
     enemies.push({type:'foe',x:ex,y:GROUND-60,w:24,h:60,vx:0,vy:0,hp:hp,max:25,spd:spd+Math.random()*0.6,dir:i%2?1:-1,cool:0,atk:0,walk:Math.random()*6,face:-1,hitBy:-1,aggro:aggro});
   }
-  if(isBoss){
-    enemies.push({type:'boss',x:WORLD_W-600,y:GROUND-100,w:40,h:95,vx:0,vy:0,hp:150,max:150,spd:Math.min(1.4+n*0.02,3.0),dir:-1,cool:0,atk:0,walk:0,face:-1,hitBy:-1,jumpT:120+Math.random()*120,chargeT:0,aggro:2});
-    sfx.boss();
-  }
+  // CHEFÃO EM TODOS OS NÍVEIS (150❤/20 dano)
+  enemies.push({type:'boss',x:WORLD_W-600,y:GROUND-100,w:40,h:95,vx:0,vy:0,hp:150,max:150,spd:Math.min(1.4+n*0.02,3.0),dir:-1,cool:0,atk:0,walk:0,face:-1,hitBy:-1,jumpT:120+Math.random()*120,chargeT:0,aggro:2});
+  sfx.boss();
   // reseta player
-  player.x=80;player.y=GROUND-70;player.vx=0;player.vy=0;player.hp=100;player.inv=60;player.kickT=0;player.cool=0;player.face=1;
+  player.x=80;player.y=GROUND-70;player.vx=0;player.vy=0;player.hp=100;player.inv=60;player.kickT=0;player.cool=0;player.face=1;player.combo=0;player.comboT=0;player.superT=0;player.spin=0;
   particles=[];floaters=[];levelClearT=0;
   el.lvl.textContent=n;
   if(n>best){best=n;localStorage.setItem('stick_best',best);el.best.textContent=best;}
-  toast('NÍVEL '+n+(isBoss?' — 👹 CHEFÃO! 👹':''));
+  toast('NÍVEL '+n+' — 👹 CHEFÃO! 👹');
 }
 function toast(t){el.toast.textContent=t;el.toast.style.display='block';clearTimeout(el.toast._t);el.toast._t=setTimeout(()=>el.toast.style.display='none',2200);}
 
@@ -161,15 +159,31 @@ function ring(x,y){particles.push({t:'r',x:x,y:y,vx:0,vy:0,life:14,max:14,s:4,c:
 function floater(x,y,txt,c){floaters.push({x:x,y:y,txt:txt,c:c||'#fff',life:45});}
 function hurtPlayer(d,srcX){
   if(player.inv>0||state!=='play')return;
+  if(player.superT>0)d=Math.ceil(d/2); // girando: dano reduzido
   player.hp-=d;player.inv=55;sfx.hurt();shake=8;
+  player.combo=0;player.comboT=0; // tomou dano: zera a sequência do super
   player.vx=(player.x<srcX?-1:1)*6;player.vy=-6;
   puff(player.x,player.y+30,8,'#ff5252');
   floater(player.x,player.y-10,'-'+d,'#ff5252');
   if(player.hp<=0){player.hp=0;gameOver();}
 }
+function doSuper(){
+  player.superT=75;player.spin=0;player.inv=Math.max(player.inv,85);player.vy=-9;
+  sfx.super();shake=10;
+  toast('🌪️ SUPER GIRATÓRIO! 🌪️');
+  floater(player.x,player.y-20,'SUPER! 🌪️🦵','#00e5ff');
+  for(let i=0;i<24;i++)flame(player.x+13+(Math.random()*80-40),player.y+35+(Math.random()*50-25));
+}
 
 // ---------- UPDATE ----------
 function rects(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+function gapAhead(e,dir){
+  const cx=e.x+e.w/2+dir*40,foot=e.y+e.h;
+  for(const p of platforms){
+    if(cx>=p.x-6&&cx<=p.x+p.w+6&&p.y>=foot-14&&p.y-foot<80)return false; // tem chão
+  }
+  return true; // buraco à frente → pular!
+}
 function update(){
   frame++;
   if(shake>0)shake--;
@@ -205,6 +219,27 @@ function update(){
   if(player.cool>0)player.cool--;if(player.inv>0)player.inv--;if(player.kickT>0)player.kickT--;
   if(player.kickT>0&&player.kickT%3===0){const fx=player.x+(player.face>0?player.w+8:-8);flame(fx,player.y+48);}
 
+  // combo expira em ~2.5s sem acertar
+  if(player.comboT>0){player.comboT--;if(player.comboT<=0)player.combo=0;}
+  // SUPER GIRATÓRIO ativo: gira no ar chutando tudo ao redor
+  if(player.superT>0){
+    player.superT--;player.spin+=0.45;player.vy+=-0.15;if(player.vy<-3)player.vy=-3;if(player.vy>2)player.vy=2;
+    if(player.superT%4===0){const fx=player.x+13,fy=player.y+35;flame(fx+(Math.random()*60-30),fy+(Math.random()*50-25));flame(fx+(Math.random()*60-30),fy+(Math.random()*50-25));}
+    if(player.superT%9===0){
+      for(const e of enemies){
+        if(e.hp<=0)continue;
+        const dx=(e.x+e.w/2)-(player.x+13),dy=(e.y+30)-(player.y+35);
+        if(Math.abs(dx)<130&&Math.abs(dy)<110){
+          e.hp-=15;sfx.hit();
+          e.vx=(dx>0?1:-1)*9;e.vy=-6;
+          for(let i=0;i<10;i++)flame(e.x+e.w/2,e.y+30);
+          floater(e.x,e.y-10,'-15 🌪️','#00e5ff');
+          if(e.hp<=0){e.hp=0;sfx.die();puff(e.x+e.w/2,e.y+30,16,'#00e5ff');floater(e.x,e.y-22,'K.O. SUPER!','#00e676');shake=8;}
+        }
+      }
+    }
+    if(player.superT<=0){player.combo=0;player.comboT=0;}
+  }
   // hitbox do chute: ativa nos frames 6..17
   if(player.kickT<=17&&player.kickT>=6){
     const hb={x:player.face>0?player.x+player.w-4:player.x-56,y:player.y+18,w:60,h:44};
@@ -214,7 +249,12 @@ function update(){
         e.vx=(player.face)*7;e.vy=-4;
         const fx=e.x+e.w/2;
         for(let i=0;i<8;i++)flame(fx,e.y+30);
-        floater(fx,e.y-8,'-10 🔥','#ffb300');
+        // sequência de 5 golpes seguidos → SUPER
+        if(player.superT<=0){
+          player.combo++;player.comboT=150;
+          floater(fx,e.y-8,'-10 🔥 ('+player.combo+'/5)','#ffb300');
+          if(player.combo>=5){doSuper();}
+        } else floater(fx,e.y-8,'-10 🔥','#ffb300');
         if(e.hp<=0){e.hp=0;sfx.die();puff(e.x+e.w/2,e.y+30,14,'#ff6a00');floater(e.x,e.y-20,'K.O.! +'+(e.type==='boss'?150:25),'#00e676');shake=6;}
       }
     }
@@ -222,7 +262,7 @@ function update(){
   // remove mortos
   enemies=enemies.filter(e=>e.hp>0);
 
-  // inimigos IA
+  // inimigos IA (NÃO caem no buraco: PULAM!)
   for(const e of enemies){
     e.walk+=0.25;
     const dmg=e.type==='boss'?20:5;
@@ -230,6 +270,12 @@ function update(){
     const dx=(player.x-e.x);
     const want=Math.sign(dx)||1;
     if(Math.abs(dx)>8)e.face=want;
+    // pula o buraco à frente em vez de cair
+    if(e.onGround&&Math.abs(e.vx)>0.4&&gapAhead(e,want)){
+      e.vy=(e.type==='boss'?-13:-12.5);e.onGround=false;
+      e.vx=want*Math.max(Math.abs(e.vx),e.spd+1.2);
+      if(Math.abs(e.x-player.x)<700)puff(e.x+e.w/2,e.y+e.h,4,'#ccc');
+    }
     const sp=e.spd*(e.type==='boss'&&e.chargeT>0?2.2:1);
     e.vx+= (want*sp - e.vx)*0.08*e.aggro;
     e.vy+=GRAV;if(e.vy>16)e.vy=16;
@@ -239,7 +285,7 @@ function update(){
     for(const p of platforms){
       if(e.x+e.w>p.x&&e.x<p.x+p.w&&e.vy>=0&&e.y+e.h>=p.y&&e.y+e.h<=p.y+28){e.y=p.y-e.h;e.vy=0;e.onGround=true;}
     }
-    if(e.y>H+200){e.y=GROUND-e.h;e.x=Math.max(400,e.x-200);e.vy=0;}
+    if(e.y>H+200){e.y=GROUND-e.h-60;e.vy=-11;e.vx=-e.vx;}
     // chefão pula e investe
     if(e.type==='boss'){
       e.face=Math.sign(player.x-e.x)||1;
@@ -378,8 +424,17 @@ function draw(){
   // seta indicando saída
   if(!rects(player,exitDoor)){ctx.fillStyle='#00e676';ctx.font='bold 16px Arial';ctx.fillText('➡ SAÍDA ➡',exitDoor.x-10,exitDoor.y-14);}
   // saída / próxima fase quando zerou
-  // player
-  drawStick(player.x,player.y,player.w,player.h,player.face,player.walk,player.moving,player.onGround,player.kickT,player.inv,false,'#fff');
+  // player (super giratório: círculo de chamas + giro)
+  if(player.superT>0){
+    ctx.strokeStyle='#00e5ff';ctx.lineWidth=4;ctx.globalAlpha=0.8;
+    ctx.beginPath();ctx.arc(player.x+13,player.y+35,52+Math.sin(player.spin*2)*6,0,7);ctx.stroke();
+    ctx.strokeStyle='#ffb300';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(player.x+13,player.y+35,66+Math.cos(player.spin*2)*6,player.spin,player.spin+5);ctx.stroke();
+    ctx.globalAlpha=1;
+    ctx.save();ctx.translate(player.x+13,player.y+35);ctx.rotate(player.spin);ctx.translate(-13-player.x+player.x,-35); // giro visual simples
+    drawStick(player.x,player.y,player.w,player.h,player.face,player.walk+player.spin,true,false,10,player.inv,false,'#00e5ff');
+    ctx.restore();
+  } else drawStick(player.x,player.y,player.w,player.h,player.face,player.walk,player.moving,player.onGround,player.kickT,player.inv,false,'#fff');
   // faixa de chute
   if(player.kickT<=17&&player.kickT>=6){
     ctx.strokeStyle='#ffb30055';ctx.lineWidth=3;
@@ -404,7 +459,9 @@ function draw(){
   // HUD canvas (fixo na tela)
   ctx.textAlign='left';ctx.font='bold 16px Arial';ctx.fillStyle='#fff';
   ctx.fillText('NÍVEL '+level+'/100  ❤ '+Math.ceil(player.hp)+'/100  🦵 chute=10  👹 '+(enemies.length)+' ➡ SAÍDA',14,28);
-  if(level%10===0){ctx.fillStyle='#ff5252';ctx.font='bold 18px Arial';ctx.textAlign='center';ctx.fillText('⚠ CHEFÃO: 150 VIDA • 20 DANO ⚠',W/2,52);}
+  if(player.superT>0){ctx.fillStyle='#00e5ff';ctx.font='bold 18px Arial';ctx.textAlign='center';ctx.fillText('🌪️ SUPER GIRATÓRIO! 🌪️',W/2,52);}
+  else if(player.combo>0){ctx.fillStyle='#ffb300';ctx.font='bold 18px Arial';ctx.textAlign='center';ctx.fillText('🔥 '+player.combo+'/5 p/ SUPER!',W/2,52);}
+  else{ctx.fillStyle='#ff5252';ctx.font='bold 15px Arial';ctx.textAlign='center';ctx.fillText('👹 CHEFÃO EM TODO NÍVEL • 150❤/20⚔',W/2,52);}
   // barra de progresso da fase
   ctx.fillStyle='#000a';ctx.fillRect(14,36,220,8);
   ctx.fillStyle='#00e676';ctx.fillRect(14,36,220*(player.x/WORLD_W),8);
