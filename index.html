@@ -35,7 +35,7 @@
 </head>
 <body>
 <h1>🔥 GUSTAVO <span>5A</span> — STICKMAN CHUTE FLAMEJANTE 🔥</h1>
-<p class="sub">100 níveis • Pulo duplo • Chute flamejante (10 de dano) • Inimigos 25❤/5 dano • Chefão 150❤/20 dano • Você 100❤</p>
+<p class="sub">PLATAFORMA com rolagem ➡ • 100 níveis • Pulo duplo • Chute flamejante (10) • Chegue na 🚪 SAÍDA • Cuidado com buracos!</p>
 <div id="hud">
   <div class="pill lvl">NÍVEL <span id="hLvl">1</span>/100</div>
   <div class="pill hp">❤ VOCÊ <span id="hHp">100</span><span class="bar"><i id="hHpBar" style="width:100%"></i></span></div>
@@ -47,7 +47,7 @@
   <div id="toast"></div>
   <div id="overlay">
     <h2 id="ovTitle">🥋 STICKMAN FLAMEJANTE</h2>
-    <p id="ovText">Você é o <b>Boneco de Palito</b> com <b style="color:#ff8f00">CHUTES FLAMEJANTES</b> e <b style="color:#40c4ff">PULO DUPLO</b>!<br>Derrote todos os inimigos para avançar. A cada nível fica <b>mais difícil</b>! A cada 10 níveis tem <b style="color:#ff5252">CHEFÃO (150 de vida, 20 de dano)</b>!<br>Sobreviva aos <b>100 NÍVEIS</b>!</p>
+    <p id="ovText">Jogo de <b>PLATAFORMA</b>: corra para a direita, pule buracos e plataformas, derrote os inimigos e entre na <b style="color:#00e676">🚪 SAÍDA</b>!<br>Você é o <b>Boneco de Palito</b> com <b style="color:#ff8f00">CHUTES FLAMEJANTES</b> e <b style="color:#40c4ff">PULO DUPLO</b>!<br>A cada 10 níveis tem <b style="color:#ff5252">CHEFÃO (150❤/20 dano)</b>! Sobreviva aos <b>100 NÍVEIS</b>!</p>
     <div class="keys">⬅️➡️ ou <b>A/D</b> = andar &nbsp;•&nbsp; ⬆️ / <b>W / ESPAÇO</b> = pular 2x (pulo duplo)<br><b>J / X / F</b> ou botão 🦵 = <b>chute flamejante (10 de dano)</b><br>Você: 100❤ &nbsp;•&nbsp; Inimigo: 25❤, encostar tira 5 &nbsp;•&nbsp; Chefão: 150❤, encostar tira 20</div>
     <button class="big" id="btnStart">▶ JOGAR</button>
     <div><button class="small" id="btnL1">Nível 1</button><button class="small" id="btnCont">Continuar do recorde</button></div>
@@ -61,6 +61,7 @@
 "use strict";
 const cv=document.getElementById('game'),ctx=cv.getContext('2d');
 const W=960,H=540,GROUND=470,GRAV=0.65;
+let WORLD_W=2800,camX=0,exitDoor={x:2700,y:GROUND-110,w:60,h:110};
 const el={lvl:document.getElementById('hLvl'),hp:document.getElementById('hHp'),hpBar:document.getElementById('hHpBar'),foe:document.getElementById('hFoe'),best:document.getElementById('hBest'),ov:document.getElementById('overlay'),ovT:document.getElementById('ovTitle'),ovX:document.getElementById('ovText'),toast:document.getElementById('toast')};
 let best=parseInt(localStorage.getItem('stick_best')||'1');el.best.textContent=best;
 let state='menu',level=1,frame=0,shake=0,particles=[],floaters=[],platforms=[],enemies=[],keys={},kickId=0,levelClearT=0;
@@ -70,14 +71,32 @@ const player={x:80,y:GROUND-70,w:26,h:70,vx:0,vy:0,face:1,onGround:true,jumps:2,
 let AC=null;function beep(f,d,type='square',v=.08){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.stop(AC.currentTime+d);}catch(e){}}
 const sfx={jump:()=>beep(400,.12,'square',.06),djump:()=>beep(600,.14,'square',.07),kick:()=>{beep(180,.15,'sawtooth',.1);},hit:()=>beep(250,.1,'sawtooth',.09),hurt:()=>beep(120,.25,'sawtooth',.12),die:()=>beep(90,.4,'sawtooth',.12),win:()=>{beep(523,.15);setTimeout(()=>beep(659,.15),140);setTimeout(()=>beep(784,.3),280);},boss:()=>beep(70,.6,'sawtooth',.14)};
 
-// ---------- LEVEL GEN (cada nível mais difícil) ----------
+// ---------- LEVEL GEN PLATAFORMA com rolagem lateral ----------
 function genLevel(n){
-  platforms=[{x:0,y:GROUND,w:W,h:70}];
-  const nPlat=Math.min(2+Math.floor(n/14),6);
-  for(let i=0;i<nPlat;i++){
-    const w=110-Math.min(40,n*0.3);
-    platforms.push({x:60+((i*263+n*97)%(W-160)),y:GROUND-90-((i*67+n*31)%260),w:w,h:16});
+  WORLD_W=Math.min(2600+n*40,5200);
+  camX=0;
+  platforms=[];
+  // chão segmentado com buracos (estilo plataforma)
+  let gx=0,seg=0;
+  while(gx<WORLD_W-220){
+    const segW=260+((seg*211+n*137)%320);
+    const gap=(seg===0)?0:(90+((seg*89+n*53)%70)+Math.min(60,n));
+    gx+=gap;
+    const w=Math.min(segW,WORLD_W-220-gx);
+    if(w<80)break;
+    platforms.push({x:gx,y:GROUND,w:w,h:70,ground:true});
+    gx+=w;seg++;
   }
+  // plataformas flutuantes para atravessar buracos e subir
+  const nPlat=Math.min(6+Math.floor(n/8),16);
+  for(let i=0;i<nPlat;i++){
+    const w=Math.max(70,120-n*0.4);
+    const px=250+((i*373+n*197)%(WORLD_W-500));
+    const py=GROUND-90-((i*83+n*47)%280);
+    platforms.push({x:px,y:py,w:w,h:16});
+  }
+  // porta de saída no fim da fase
+  exitDoor={x:WORLD_W-120,y:GROUND-110,w:60,h:110};
   enemies=[];
   const isBoss=(n%10===0);
   let count=Math.min(1+Math.floor(n/7),12); // 1 → 12 inimigos
@@ -85,12 +104,12 @@ function genLevel(n){
   const spd=Math.min(0.8+n*0.035,3.6);
   const aggro=Math.min(0.6+n*0.02,2.2);
   for(let i=0;i<count;i++){
+    const ex=600+((i*521+n*311)%(WORLD_W-900));
     const hp=25;
-    enemies.push({type:'foe',x:450+((i*173+n*131)%420),y:GROUND-60,w:24,h:60,vx:0,vy:0,hp:hp,max:25,spd:spd+Math.random()*0.6,dir:i%2?1:-1,cool:0,atk:0,walk:Math.random()*6,face:-1,hitBy:-1,aggro:aggro});
+    enemies.push({type:'foe',x:ex,y:GROUND-60,w:24,h:60,vx:0,vy:0,hp:hp,max:25,spd:spd+Math.random()*0.6,dir:i%2?1:-1,cool:0,atk:0,walk:Math.random()*6,face:-1,hitBy:-1,aggro:aggro});
   }
   if(isBoss){
-    const nb=Math.floor(n/10); // chefão escala levemente em velocidade
-    enemies.push({type:'boss',x:700,y:GROUND-100,w:40,h:95,vx:0,vy:0,hp:150,max:150,spd:Math.min(1.4+n*0.02,3.0),dir:-1,cool:0,atk:0,walk:0,face:-1,hitBy:-1,jumpT:120+Math.random()*120,chargeT:0,aggro:2});
+    enemies.push({type:'boss',x:WORLD_W-600,y:GROUND-100,w:40,h:95,vx:0,vy:0,hp:150,max:150,spd:Math.min(1.4+n*0.02,3.0),dir:-1,cool:0,atk:0,walk:0,face:-1,hitBy:-1,jumpT:120+Math.random()*120,chargeT:0,aggro:2});
     sfx.boss();
   }
   // reseta player
@@ -164,7 +183,7 @@ function update(){
   if(player.moving&&player.onGround)player.walk+=0.35;else if(!player.onGround)player.walk+=0.1;
   player.vy+=GRAV;if(player.vy>16)player.vy=16;
   player.x+=player.vx;
-  if(player.x<4)player.x=4;if(player.x>W-player.w-4)player.x=W-player.w-4;
+  if(player.x<4)player.x=4;if(player.x>WORLD_W-player.w-4)player.x=WORLD_W-player.w-4;
   // plataformas X depois Y
   player.y+=player.vy;player.onGround=false;
   for(const p of platforms){
@@ -173,8 +192,16 @@ function update(){
       else if(player.vy<0&&player.y>=p.y+p.h-26&&player.y<=p.y+p.h){player.y=p.y+p.h;player.vy=0;}
     }
   }
-  if(player.y+player.h>=GROUND&&platforms.length){/* ground já é plataforma */}
-  if(player.y>H){player.y=GROUND-player.h;player.vy=0;hurtPlayer(10,player.x+100);}
+  // caiu no buraco: perde 15 e volta para plataforma anterior
+  if(player.y>H+40){
+    hurtPlayer(15,player.x+50);
+    let back=80;
+    for(const p of platforms){if(p.ground&&p.x<player.x)back=p.x+p.w/2;}
+    player.x=Math.max(4,back-40);player.y=GROUND-player.h-40;player.vy=0;
+    if(player.hp<=0)return;
+  }
+  // câmera segue o player (estilo plataforma)
+  camX=Math.max(0,Math.min(WORLD_W-W,player.x+player.w/2-W*0.42));
   if(player.cool>0)player.cool--;if(player.inv>0)player.inv--;if(player.kickT>0)player.kickT--;
   if(player.kickT>0&&player.kickT%3===0){const fx=player.x+(player.face>0?player.w+8:-8);flame(fx,player.y+48);}
 
@@ -207,11 +234,12 @@ function update(){
     e.vx+= (want*sp - e.vx)*0.08*e.aggro;
     e.vy+=GRAV;if(e.vy>16)e.vy=16;
     e.x+=e.vx;
-    if(e.x<4){e.x=4;e.vx=Math.abs(e.vx);}if(e.x>W-e.w-4){e.x=W-e.w-4;e.vx=-Math.abs(e.vx);}
+    if(e.x<4){e.x=4;e.vx=Math.abs(e.vx);}if(e.x>WORLD_W-e.w-4){e.x=WORLD_W-e.w-4;e.vx=-Math.abs(e.vx);}
     e.y+=e.vy;e.onGround=false;
     for(const p of platforms){
       if(e.x+e.w>p.x&&e.x<p.x+p.w&&e.vy>=0&&e.y+e.h>=p.y&&e.y+e.h<=p.y+28){e.y=p.y-e.h;e.vy=0;e.onGround=true;}
     }
+    if(e.y>H+200){e.y=GROUND-e.h;e.x=Math.max(400,e.x-200);e.vy=0;}
     // chefão pula e investe
     if(e.type==='boss'){
       e.face=Math.sign(player.x-e.x)||1;
@@ -233,15 +261,20 @@ function update(){
   el.hp.textContent=Math.max(0,Math.ceil(player.hp));el.hpBar.style.width=(player.hp)+'%';
   el.foe.textContent=enemies.length;
 
-  // passou de nível?
-  if(enemies.length===0){
-    levelClearT++;
-    if(levelClearT===1){sfx.win();player.hp=Math.min(100,player.hp+0);}
-    if(levelClearT>90){
-      if(level>=100){victory();return;}
-      level++;genLevel(level);
+  // passou de nível? estilo plataforma: chegue na PORTA no fim da fase
+  if(rects(player,exitDoor)){
+    if(enemies.length>0){
+      if(!player._warn||frame-player._warn>90){player._warn=frame;toast('Derrote todos os inimigos! 👹 '+enemies.length+' restam');sfx.hit();}
+    }else{
+      levelClearT++;
+      if(levelClearT===1){sfx.win();}
+      if(levelClearT>40){
+        if(level>=100){victory();return;}
+        level++;genLevel(level);
+      }
+      return;
     }
-  }
+  } else levelClearT=0;
 }
 
 // ---------- DRAW stickman com animação ----------
@@ -320,20 +353,31 @@ function draw(){
   // fundo com gradiente + parallax simples
   const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1a1a3a');g.addColorStop(.7,'#2b1a4a');g.addColorStop(1,'#3a1a2a');
   ctx.fillStyle=g;ctx.fillRect(-10,-10,W+20,H+20);
-  ctx.fillStyle='#ffffff22';for(let i=0;i<40;i++){const sx=(i*137+frame*0.1*(1+i%3))%W;ctx.fillRect(sx,(i*53)%300,2,2);}
-  ctx.fillStyle='#ff6a00';ctx.beginPath();ctx.arc(830,90,40,0,7);ctx.fill();ctx.fillStyle='#ffb300';ctx.beginPath();ctx.arc(830,90,32,0,7);ctx.fill();
-  // montanhas
-  ctx.fillStyle='#0c0c22';ctx.beginPath();ctx.moveTo(0,GROUND);for(let x=0;x<=W;x+=80)ctx.lineTo(x,GROUND-60-((x*7+level*13)%90));ctx.lineTo(W,GROUND);ctx.fill();
-  // plataformas
+  ctx.fillStyle='#ffffff22';for(let i=0;i<60;i++){let sx=(i*197-camX*0.3%(W+200))%(W+200);if(sx<0)sx+=W+200;sx-=100;ctx.fillRect(sx,(i*53)%300,2,2);}
+  ctx.fillStyle='#ff6a00';ctx.beginPath();ctx.arc(830-camX*0.1,90,40,0,7);ctx.fill();ctx.fillStyle='#ffb300';ctx.beginPath();ctx.arc(830-camX*0.1,90,32,0,7);ctx.fill();
+  // montanhas com parallax
+  ctx.fillStyle='#0c0c22';ctx.beginPath();ctx.moveTo(-20,GROUND);
+  for(let sx=-20;sx<=W+20;sx+=80){const wx=sx+camX;ctx.lineTo(sx,GROUND-60-((wx*7+level*13)%90));}
+  ctx.lineTo(W+20,GROUND);ctx.fill();
+  ctx.save();ctx.translate(-Math.round(camX),0);
+  // plataformas (só visíveis)
   for(const p of platforms){
+    if(p.x+p.w<camX-50||p.x>camX+W+50)continue;
     if(p.h>30){ctx.fillStyle='#3d2b1f';ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle='#5d8a4a';ctx.fillRect(p.x,p.y,p.w,10);}
     else{ctx.fillStyle='#4a4a7a';ctx.fillRect(p.x,p.y,p.w,p.h);ctx.fillStyle='#7a7aff';ctx.fillRect(p.x,p.y,p.w,4);}
   }
+  // PORTA DE SAÍDA estilo plataforma
+  const open=enemies.length===0;
+  ctx.fillStyle=open?'#00e676':'#555';
+  ctx.fillRect(exitDoor.x,exitDoor.y,exitDoor.w,exitDoor.h);
+  ctx.fillStyle=open?'#a7ffeb':'#333';
+  ctx.fillRect(exitDoor.x+8,exitDoor.y+8,exitDoor.w-16,exitDoor.h-8);
+  ctx.fillStyle=open?'#004d40':'#999';ctx.font='bold 28px Arial';ctx.textAlign='center';
+  ctx.fillText(open?'🚪':'🔒',exitDoor.x+exitDoor.w/2,exitDoor.y+55);
+  ctx.font='bold 13px Arial';ctx.fillText(open?'SAÍDA!':'DERROTE '+enemies.length,exitDoor.x+exitDoor.w/2,exitDoor.y+80);
+  // seta indicando saída
+  if(!rects(player,exitDoor)){ctx.fillStyle='#00e676';ctx.font='bold 16px Arial';ctx.fillText('➡ SAÍDA ➡',exitDoor.x-10,exitDoor.y-14);}
   // saída / próxima fase quando zerou
-  if(enemies.length===0){
-    ctx.fillStyle='#00e676';ctx.font='bold 22px Arial';ctx.textAlign='center';
-    ctx.fillText(level>=100?'🏆 FIM!':'✨ NÍVEL LIMPO! INDO PARA '+(level+1)+'...',W/2,150);
-  }
   // player
   drawStick(player.x,player.y,player.w,player.h,player.face,player.walk,player.moving,player.onGround,player.kickT,player.inv,false,'#fff');
   // faixa de chute
@@ -356,10 +400,14 @@ function draw(){
   // textos flutuantes
   ctx.textAlign='center';ctx.font='bold 16px Arial';
   for(const f of floaters){ctx.globalAlpha=Math.min(1,f.life/25);ctx.fillStyle=f.c;ctx.fillText(f.txt,f.x,f.y);ctx.globalAlpha=1;}
-  // HUD canvas
+  ctx.restore(); // fim do mundo (câmera)
+  // HUD canvas (fixo na tela)
   ctx.textAlign='left';ctx.font='bold 16px Arial';ctx.fillStyle='#fff';
-  ctx.fillText('NÍVEL '+level+'/100  ❤ '+Math.ceil(player.hp)+'/100  🦵 chute=10  👹 '+(enemies.length)+' left',14,28);
+  ctx.fillText('NÍVEL '+level+'/100  ❤ '+Math.ceil(player.hp)+'/100  🦵 chute=10  👹 '+(enemies.length)+' ➡ SAÍDA',14,28);
   if(level%10===0){ctx.fillStyle='#ff5252';ctx.font='bold 18px Arial';ctx.textAlign='center';ctx.fillText('⚠ CHEFÃO: 150 VIDA • 20 DANO ⚠',W/2,52);}
+  // barra de progresso da fase
+  ctx.fillStyle='#000a';ctx.fillRect(14,36,220,8);
+  ctx.fillStyle='#00e676';ctx.fillRect(14,36,220*(player.x/WORLD_W),8);
   ctx.restore();
 }
 function loop(){if(state==='play'){update();draw();}requestAnimationFrame(loop);}
